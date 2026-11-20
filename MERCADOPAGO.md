@@ -44,7 +44,7 @@ faça um novo deploy — variável nova não entra em deploy antigo.
 Mercado Pago → **Suas integrações → sua aplicação → Webhooks → Configurar
 notificações**.
 
-- URL: `https://jogargta6.com/api/pix/webhook`
+- URL: `https://gta6gratis.com/api/pix/webhook`
 - Evento: marque apenas **Pagamentos**
 
 ---
