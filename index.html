@@ -143,7 +143,14 @@ a{color:inherit;text-decoration:none}
 /* ============ rodapé ============ */
 .rodape{position:relative;z-index:1;border-top:1px solid var(--line);padding:26px 0 40px}
 .rodape .links{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;font-weight:700;
-  letter-spacing:.07em;color:var(--muted);margin-bottom:14px}
+  letter-spacing:.07em;color:var(--muted);margin-bottom:14px;align-items:center}
+/* o <button> dos termos não herda fonte nem espaçamento do pai; sem isto
+   ele sai com o padrão do navegador e destoa dos links ao lado */
+.rodape .links a,
+.rodape .links button{font:inherit;letter-spacing:inherit;color:inherit;
+  line-height:inherit;padding:0;border:0;background:none}
+.rodape .links a:hover,
+.rodape .links button:hover{color:var(--rosa)}
 .rodape p{font-size:11px;color:var(--dim);line-height:1.6;max-width:760px;margin:0}
 
 /* ============ barra fixa no celular ============ */
