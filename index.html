@@ -20,6 +20,7 @@
   --sans:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 *{box-sizing:border-box}
+img{-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none}
 html{background:var(--bg)}
 body{margin:0;background:transparent;color:var(--tx);font-family:var(--sans);
   -webkit-font-smoothing:antialiased;overflow-x:hidden}
@@ -237,6 +238,11 @@ a{color:inherit;text-decoration:none}
   .base{flex-direction:column;gap:14px}
   .base .esq,.base .dir{flex:none;text-align:center;min-width:0}
   .base .btn{width:100%;order:-1}
+}
+@media(max-width:820px){
+  /* o iOS amplia a tela ao focar campo com fonte menor que 16px;
+     subir a fonte resolve sem tirar o pinça-zoom de quem precisa */
+  .campo, .copia input, .enviar input{font-size:16px}
 }
 @media(max-width:520px){
   .wrap{padding:0 16px}
@@ -825,6 +831,14 @@ document.body.style.overflow = 'hidden';     // trava enquanto o portal está ab
 montarFundo(); montarArte(); montarPlayer(); pintar(); tocarTema();
 if (LIVE.on){ puxarLive(); setInterval(puxarLive, LIVE.ms); }
 document.addEventListener('keydown', e => { if (e.key==='Escape') fecharMo(); });
+
+/* Bloqueia o menu de contexto, menos em campo de texto — ali ele é o jeito
+   de colar. Isso só desencoraja o clique casual: DevTools, atalho de
+   teclado e ver-código continuam abrindo tudo. */
+document.addEventListener('contextmenu', e => {
+  if (e.target.closest('input, textarea')) return;
+  e.preventDefault();
+});
 </script>
 </body>
 </html>
