@@ -72,6 +72,9 @@ a{color:inherit;text-decoration:none}
 .btn.vazio{background:rgba(255,248,255,.07);color:var(--muted);box-shadow:none;font-weight:600;
   letter-spacing:0}
 .link{font-size:11px;color:var(--muted);text-decoration:underline;margin-top:11px}
+.som{text-decoration:none;border:1px solid var(--line2);border-radius:999px;padding:7px 15px;
+  letter-spacing:.06em}
+.som:hover{border-color:var(--rosa)}
 .link:hover{color:var(--tx)}
 
 /* ============ palco ============ */
@@ -250,6 +253,8 @@ a{color:inherit;text-decoration:none}
 <div class="bg" id="bg"></div>
 
 <!-- ================= PRÉ-ROLL ================= -->
+<audio id="tema" src="audio/tema.mp3" loop preload="auto"></audio>
+
 <div class="portal" id="portal">
   <div class="portal-in">
     <div class="arte" id="arte"></div>
@@ -260,6 +265,8 @@ a{color:inherit;text-decoration:none}
       </div>
       <div class="pb-meio">
         <button class="btn g" onclick="fecharPortal()">JOGAR GTA&nbsp;VI</button>
+        <button class="link som" id="btSom" onclick="ligarSom()" style="display:none">
+          ♪ ativar som</button>
       </div>
       <div class="pb-lado dir">
         <b>SEM DOWNLOAD</b>
@@ -488,8 +495,43 @@ function pintar(){
   $('prOnline').textContent  = fmt(S.gente);
 }
 
+/* ---------------- trilha do pré-roll ----------------
+   Navegadores bloqueiam som automático sem interação. Tentamos tocar; se
+   o navegador recusar, aparece um botão discreto para ligar na mão. */
+const TEMA = { el:null, vol:0.55, fade:null };
+
+function tocarTema(){
+  const a = $('tema'); if (!a) return;
+  TEMA.el = a;
+  a.volume = TEMA.vol;
+  a.play().catch(() => { const b = $('btSom'); if (b) b.style.display = ''; });
+}
+
+function ligarSom(){
+  const b = $('btSom'); if (b) b.style.display = 'none';
+  if (!TEMA.el) return;
+  TEMA.el.volume = TEMA.vol;
+  TEMA.el.play().catch(() => {});
+}
+
+function apagarTema(ms = 1400){
+  const a = TEMA.el;
+  if (!a || a.paused) return;
+  clearInterval(TEMA.fade);
+  const v0 = a.volume, t0 = performance.now();
+  TEMA.fade = setInterval(() => {
+    const k = Math.min(1, (performance.now() - t0) / ms);
+    a.volume = Math.max(0, v0 * (1 - k));
+    if (k >= 1){ clearInterval(TEMA.fade); a.pause(); a.currentTime = 0; }
+  }, 40);
+}
+
 /* ---------------- portal ---------------- */
-function fecharPortal(){ $('portal').classList.add('off'); document.body.style.overflow = ''; }
+function fecharPortal(){
+  apagarTema();
+  $('portal').classList.add('off');
+  document.body.style.overflow = '';
+}
 function entrar(){ passo1(); }   // o pré-roll apenas fecha; o modal é só daqui
 
 /* ---------------- modal em tela cheia ---------------- */
@@ -771,7 +813,7 @@ setInterval(() => { S.gente = Math.max(600, S.gente + ri(-45,58)); pintar(); }, 
 
 /* ---------------- início ---------------- */
 document.body.style.overflow = 'hidden';     // trava enquanto o portal está aberto
-montarFundo(); montarArte(); montarPlayer(); pintar();
+montarFundo(); montarArte(); montarPlayer(); pintar(); tocarTema();
 if (LIVE.on){ puxarLive(); setInterval(puxarLive, LIVE.ms); }
 document.addEventListener('keydown', e => { if (e.key==='Escape') fecharMo(); });
 </script>
