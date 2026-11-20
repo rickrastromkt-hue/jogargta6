@@ -72,9 +72,6 @@ a{color:inherit;text-decoration:none}
 .btn.vazio{background:rgba(255,248,255,.07);color:var(--muted);box-shadow:none;font-weight:600;
   letter-spacing:0}
 .link{font-size:11px;color:var(--muted);text-decoration:underline;margin-top:11px}
-.som{text-decoration:none;border:1px solid var(--line2);border-radius:999px;padding:7px 15px;
-  letter-spacing:.06em}
-.som:hover{border-color:var(--rosa)}
 .link:hover{color:var(--tx)}
 
 /* ============ palco ============ */
@@ -265,8 +262,6 @@ a{color:inherit;text-decoration:none}
       </div>
       <div class="pb-meio">
         <button class="btn g" onclick="fecharPortal()">JOGAR GTA&nbsp;VI</button>
-        <button class="link som" id="btSom" onclick="ligarSom()" style="display:none">
-          ♪ ativar som</button>
       </div>
       <div class="pb-lado dir">
         <b>SEM DOWNLOAD</b>
@@ -496,22 +491,25 @@ function pintar(){
 }
 
 /* ---------------- trilha do pré-roll ----------------
-   Navegadores bloqueiam som automático sem interação. Tentamos tocar; se
-   o navegador recusar, aparece um botão discreto para ligar na mão. */
+   Toca sozinho. Se o navegador recusar o som automático (o padrão para
+   quem nunca visitou o site), tenta de novo no primeiro toque da pessoa,
+   sem pedir nada na tela. */
 const TEMA = { el:null, vol:0.55, fade:null };
 
 function tocarTema(){
   const a = $('tema'); if (!a) return;
   TEMA.el = a;
   a.volume = TEMA.vol;
-  a.play().catch(() => { const b = $('btSom'); if (b) b.style.display = ''; });
-}
-
-function ligarSom(){
-  const b = $('btSom'); if (b) b.style.display = 'none';
-  if (!TEMA.el) return;
-  TEMA.el.volume = TEMA.vol;
-  TEMA.el.play().catch(() => {});
+  a.play().catch(() => {
+    // navegador recusou o som automático: tenta de novo no primeiro toque
+    const naPrimeira = () => {
+      a.play().catch(() => {});
+      ['pointerdown','keydown','touchstart'].forEach(ev =>
+        document.removeEventListener(ev, naPrimeira));
+    };
+    ['pointerdown','keydown','touchstart'].forEach(ev =>
+      document.addEventListener(ev, naPrimeira, { once:false }));
+  });
 }
 
 function apagarTema(ms = 1400){
