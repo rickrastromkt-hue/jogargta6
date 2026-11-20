@@ -1,0 +1,20 @@
+# originais pesados — o site usa as versões otimizadas
+screenshots/*.jpg
+img/home-pre-roll.png
+img/jogat-gta6.png
+
+# backups e lixo do sistema
+*.bak
+.DS_Store
+
+# dependências e ambiente — o token do Mercado Pago nunca entra aqui
+node_modules/
+.env
+.env.*
+.vercel/
+
+# config local de ferramenta, não é do projeto
+.claude/
+
+# imagens soltas não usadas pelo site
+screenshots/*.png

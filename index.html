@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jogar GTA 6</title>
+<link rel="icon" type="image/png" href="img/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#140619; --bg2:#1A0721; --panel:#1F0A28; --panel2:#260D31;
+  --line:rgba(217,202,223,.12); --line2:rgba(217,202,223,.23);
+  --tx:#FFF8FF; --muted:#BBA9C2; --dim:#8A7691;
+  --rosa:#F6A9C0; --rosa-tx:#14061A;
+  --mag:#FF3CA6; --laranja:#FF9D5C; --menta:#64EFAF; --amarelo:#FFB775;
+  --r:18px;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:transparent;color:var(--tx);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit;padding:0}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1320px;margin:0 auto;padding:0 24px}
+
+/* ============ fundo com as capturas passando ============ */
+.bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.bg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;
+  transition:opacity 2.4s ease;filter:blur(2px) saturate(.9)}
+.bg img.on{opacity:.20;animation:deriva 22s ease-in-out infinite alternate}
+.bg::after{content:"";position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(20,6,25,.82),rgba(20,6,25,.92) 42%,var(--bg) 92%)}
+@keyframes deriva{from{transform:scale(1.04) translate3d(-1.2%,0,0)}
+                  to{transform:scale(1.14) translate3d(1.2%,0,0)}}
+@keyframes pulsa{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes surge{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ============ pré-roll ============ */
+.portal{position:fixed;inset:0;z-index:70;background:var(--bg);overflow-y:auto;
+  display:grid;place-items:center;padding:clamp(18px,4vh,40px) clamp(16px,4vw,48px);
+  transition:opacity .4s,visibility .4s}
+.portal.off{opacity:0;visibility:hidden}
+.portal-in{width:100%;max-width:1060px;display:flex;flex-direction:column;align-items:center;
+  gap:clamp(22px,4.5vh,42px)}
+.arte{width:100%;display:flex;justify-content:center}
+.arte img{display:block;max-width:100%;max-height:60vh;width:auto;height:auto;
+  border-radius:12px;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+.arte.grade{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;background:var(--line);
+  border-radius:12px;overflow:hidden;max-height:60vh}
+.arte.grade img{width:100%;aspect-ratio:16/10;max-height:none;object-fit:cover;
+  border-radius:0;box-shadow:none}
+.portal-base{display:flex;align-items:center;gap:22px;width:100%}
+.pb-lado{flex:1;min-width:0}
+.pb-lado.dir{text-align:right}
+.pb-lado b{display:block;font-size:11px;font-weight:600;letter-spacing:.14em}
+.pb-lado span{display:block;font-size:11.5px;color:var(--muted);margin-top:5px}
+.pb-lado em{font-style:normal;font-weight:600;color:var(--menta)}
+.pb-meio{flex:none;display:flex;flex-direction:column;align-items:center}
+
+/* ============ botões ============ */
+.btn{display:inline-block;border-radius:999px;background:var(--rosa);color:var(--rosa-tx);
+  font-weight:600;letter-spacing:.04em;transition:filter .16s,transform .16s;
+  box-shadow:0 12px 34px rgba(246,169,192,.28)}
+.btn:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.btn.g{padding:17px 46px;font-size:15.5px}
+.btn.m{padding:16px 38px;font-size:14.5px;letter-spacing:.05em}
+.btn.bloco{display:block;width:100%;text-align:center;padding:15px;font-size:14px}
+.btn.vazio{background:rgba(255,248,255,.07);color:var(--muted);box-shadow:none;font-weight:600;
+  letter-spacing:0}
+.link{font-size:11px;color:var(--muted);text-decoration:underline;margin-top:11px}
+.link:hover{color:var(--tx)}
+
+/* ============ palco ============ */
+.palco{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;
+  justify-content:center;gap:clamp(18px,3.4vh,30px);padding-block:26px 34px}
+
+.cabeca{display:flex;align-items:flex-end;justify-content:space-between;gap:20px}
+.marca img{height:clamp(34px,4.4vh,50px);width:auto;display:block;
+  opacity:.78;transition:opacity .2s}
+.marca:hover img{opacity:1}
+.agora{text-align:right}
+.agora span{display:block;font-size:10px;font-weight:600;letter-spacing:.22em;color:var(--dim)}
+.agora strong{display:block;font-size:clamp(20px,2.8vw,30px);font-weight:700;
+  letter-spacing:-.03em;margin-top:6px;line-height:1}
+
+.palco-tela{width:100%}
+.tela{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:14px;
+  overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+.tela iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
+.base{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.base .esq{display:flex;gap:clamp(20px,4vw,46px);flex-wrap:wrap}
+.dado span{display:block;font-size:10px;font-weight:600;letter-spacing:.16em;color:var(--dim);
+  margin-bottom:7px}
+.dado strong{display:block;font-size:clamp(17px,2.2vw,23px);font-weight:700;letter-spacing:-.02em}
+.dado strong b{color:var(--menta);font-weight:600}
+.dado .ponto{margin-right:7px;vertical-align:middle}
+#baseConta{font-family:var(--mono);color:var(--amarelo)}
+.acoes{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#btnMeus{background:transparent;border:1px solid var(--line2);color:var(--muted);box-shadow:none}
+#btnMeus:hover{border-color:var(--rosa);color:var(--tx)}
+#btnMeus b{font-weight:700;color:var(--rosa);margin-left:4px}
+
+/* ============ anúncio do sorteio ============ */
+.flash{position:fixed;inset:0;z-index:60;display:grid;place-items:center;text-align:center;
+  background:rgba(20,6,25,.80);backdrop-filter:blur(8px);padding:24px;
+  opacity:0;visibility:hidden;transition:opacity .45s,visibility .45s}
+.flash.on{opacity:1;visibility:visible}
+.flash span{display:block;font-size:clamp(11px,1.6vw,14px);font-weight:600;letter-spacing:.3em;
+  color:var(--menta);margin-bottom:16px}
+.flash strong{display:block;font-size:clamp(34px,8vw,86px);font-weight:700;letter-spacing:-.04em;
+  line-height:1;color:var(--rosa);text-shadow:0 18px 60px rgba(246,169,192,.35)}
+.flash.on strong{animation:entra .55s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes entra{from{opacity:0;transform:scale(.86) translateY(14px)}to{opacity:1;transform:none}}
+
+/* ============ rodapé ============ */
+.rodape{position:relative;z-index:1;border-top:1px solid var(--line);padding:26px 0 40px}
+.rodape .links{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;font-weight:700;
+  letter-spacing:.07em;color:var(--muted);margin-bottom:14px}
+.rodape p{font-size:11px;color:var(--dim);line-height:1.6;max-width:760px;margin:0}
+
+/* ============ barra fixa no celular ============ */
+.barra--removida{position:fixed;left:0;right:0;bottom:0;z-index:40;display:none;align-items:center;gap:12px;
+  padding:11px 16px calc(11px + env(safe-area-inset-bottom));background:rgba(20,6,25,.95);
+  backdrop-filter:blur(14px);border-top:1px solid var(--line2);transform:translateY(115%);
+  transition:transform .26s}
+.barra.on{transform:none}
+.barra .t{flex:1;min-width:0}
+.barra .t b{display:block;font-size:16px;font-weight:700;line-height:1.1}
+.barra .t span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ============ modal ============ */
+.ov{position:fixed;inset:0;background:var(--bg);z-index:80;display:none;overflow-y:auto}
+.ov.on{display:block}
+.mo{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:clamp(24px,6vh,60px) 20px;animation:surge .25s}
+.mo-in{width:100%;max-width:430px}
+.passos-n{display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:26px}
+.passos-n i{width:28px;height:3px;border-radius:2px;background:var(--line2);display:block}
+.passos-n i.on{background:var(--rosa)}
+.mo h3{font-size:clamp(22px,3.2vw,30px);font-weight:700;letter-spacing:-.03em;margin:0 0 9px;
+  text-align:center}
+.mo .sub{font-size:13.5px;color:var(--muted);line-height:1.55;margin:0 0 26px;text-align:center}
+.fechar-x{position:fixed;top:18px;right:20px;z-index:2;font-size:26px;color:var(--dim);line-height:1}
+.fechar-x:hover{color:var(--tx)}
+.opcao{display:flex;align-items:center;gap:15px;width:100%;text-align:left;padding:17px 18px;
+  border-radius:16px;border:1px solid var(--line);background:rgba(255,248,255,.03);
+  margin-bottom:11px;transition:.16s}
+.opcao:hover{border-color:var(--line2);background:rgba(255,248,255,.06)}
+.opcao.sel{border-color:var(--rosa);background:rgba(246,169,192,.10)}
+.opcao .min{font-size:25px;font-weight:700;letter-spacing:-.03em;min-width:78px}
+.opcao .d{flex:1;min-width:0}
+.opcao .d i{display:block;font-style:normal;font-size:13px;font-weight:700}
+.opcao .d u{display:block;text-decoration:none;font-size:11.5px;color:var(--dim);margin-top:3px}
+.opcao .p{font-size:17px;font-weight:600;white-space:nowrap}
+.sorte{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin:20px 0}
+.sorte span{display:block;font-family:var(--mono);font-size:18px;font-weight:700;letter-spacing:.08em;
+  text-align:center;padding:14px 6px;border-radius:12px;background:rgba(246,169,192,.10);
+  border:1px solid rgba(246,169,192,.30);color:var(--rosa);animation:surge .3s}
+.termos{text-align:left;max-height:58vh;overflow-y:auto;padding-right:6px;margin-bottom:20px}
+.termos::-webkit-scrollbar{width:5px}
+.termos::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+.termos h4{font-size:13px;font-weight:700;margin:20px 0 7px;color:var(--tx)}
+.termos h4:first-child{margin-top:0}
+.termos p{font-size:12.5px;color:var(--muted);line-height:1.65;margin:0}
+.termos .aviso-forte{background:rgba(255,157,92,.10);border:1px solid rgba(255,157,92,.26);
+  border-radius:12px;padding:13px 14px;color:var(--amarelo)}
+.verTermos{background:none;color:var(--rosa);text-decoration:underline;font:inherit;padding:0}
+.obs-campo{font-size:11px;color:var(--dim);line-height:1.5;margin:-4px 0 14px}
+.esperando{display:flex;align-items:center;justify-content:center;gap:10px;font-size:12.5px;
+  color:var(--muted);margin:0}
+.esperando i{width:14px;height:14px;border-radius:50%;border:2px solid var(--line2);
+  border-top-color:var(--rosa);animation:gira .8s linear infinite;flex:none}
+@keyframes gira{to{transform:rotate(360deg)}}
+.mo-h{display:flex;align-items:center;padding:15px 18px;border-bottom:1px solid var(--line)}
+.mo-h h3{font-size:11px;font-weight:700;letter-spacing:.16em;margin:0;flex:1;color:var(--dim);
+  text-transform:uppercase}
+.mo-h button{font-size:20px;color:var(--dim);line-height:1}
+.mo-b{padding:19px 18px}
+.campo{width:100%;background:rgba(255,248,255,.05);border:1px solid var(--line);color:var(--tx);
+  border-radius:12px;padding:13px 15px;font-size:14px;outline:none;margin-bottom:12px;font-family:inherit}
+.campo:focus{border-color:var(--rosa)}
+.aceite{display:flex;gap:10px;align-items:flex-start;cursor:pointer;margin-bottom:4px}
+.aceite input{margin-top:2px;accent-color:var(--mag);width:15px;height:15px;flex:none}
+.aceite span{font-size:11px;color:var(--dim);line-height:1.5}
+.simul{font-size:10.5px;text-align:center;color:var(--amarelo);background:rgba(255,157,92,.10);
+  border:1px solid rgba(255,157,92,.26);border-radius:10px;padding:10px;margin-bottom:16px;line-height:1.5}
+.qr{width:170px;height:170px;margin:0 auto 16px;border-radius:12px;background:#fff;padding:11px;
+  display:grid;grid-template-columns:repeat(21,1fr);grid-template-rows:repeat(21,1fr)}
+.qr i{background:#14061A}
+.qrfoto{width:170px;height:170px;display:block;margin:0 auto 16px;border-radius:12px;background:#fff;
+  padding:10px;object-fit:contain}
+.copia{display:flex;gap:7px;margin-bottom:14px}
+.copia input{flex:1;min-width:0;background:rgba(255,248,255,.05);border:1px solid var(--line);
+  color:var(--muted);border-radius:10px;padding:10px;font-size:11px;font-family:var(--mono);outline:none}
+.copia button{padding:10px 14px;border-radius:10px;background:rgba(255,248,255,.08);
+  font-size:12px;font-weight:600}
+.resumo{display:flex;flex-direction:column;gap:9px;margin-bottom:17px}
+.resumo div{display:flex;justify-content:space-between;font-size:12.5px;gap:10px}
+.resumo span{color:var(--muted)}
+.resumo b{font-weight:600;text-align:right}
+.resumo .tot{border-top:1px solid var(--line);padding-top:10px;font-size:15px}
+.fim{text-align:center;padding:6px 0 2px}
+.fim .ic{width:56px;height:56px;border-radius:50%;margin:0 auto 15px;display:grid;place-items:center;
+  font-size:26px}
+.fim .ok{background:rgba(100,239,175,.14);border:1px solid rgba(100,239,175,.4);color:var(--menta)}
+.fim .nao{background:rgba(255,122,138,.12);border:1px solid rgba(255,122,138,.35);color:#FF7A8A}
+.fim h4{font-size:17px;margin:0 0 8px;font-weight:700;letter-spacing:-.02em}
+.fim p{font-size:12.5px;color:var(--muted);line-height:1.55;margin:0 0 17px}
+.erro{font-size:11.5px;color:#FF7A8A;margin:9px 0 0;display:none}
+
+/* ============ responsivo ============ */
+@media(max-width:1180px){
+  .grade3{grid-template-columns:1fr}
+  .lado{opacity:1}
+  .centro{order:-1}
+  .sec{grid-template-columns:1fr}
+}
+@media(max-width:820px){
+  .arte img{width:100%;height:52vh;max-width:none;max-height:none;object-fit:cover;object-position:center}
+  .arte.grade{grid-template-columns:repeat(2,1fr);max-height:52vh}
+  .portal-base{flex-direction:column;gap:16px}
+  .pb-lado{flex:none;text-align:center}
+  .pb-lado.dir{display:none}
+  .pb-lado b{display:none}
+  .pb-lado span{font-size:12.5px;margin-top:0}
+  .pb-meio{order:2}
+  .barra{display:flex}
+  body{padding-bottom:78px}
+  .topo img{height:44px}
+  .menu{display:none}
+  .fotos{grid-template-columns:repeat(2,1fr)}
+  .base{flex-direction:column;gap:14px}
+  .base .esq,.base .dir{flex:none;text-align:center;min-width:0}
+  .base .btn{width:100%;order:-1}
+}
+@media(max-width:520px){
+  .wrap{padding:0 16px}
+  .passos{grid-template-columns:1fr}
+  .conta strong{font-size:40px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg" id="bg"></div>
+
+<!-- ================= PRÉ-ROLL ================= -->
+<div class="portal" id="portal">
+  <div class="portal-in">
+    <div class="arte" id="arte"></div>
+    <div class="portal-base">
+      <div class="pb-lado">
+        <b>AO VIVO AGORA</b>
+        <span><i class="ponto"></i> <em id="prOnline">0</em> pessoas assistindo</span>
+      </div>
+      <div class="pb-meio">
+        <button class="btn g" onclick="fecharPortal()">JOGAR GTA&nbsp;VI</button>
+        <button class="link" onclick="fecharPortal()">só quero assistir</button>
+      </div>
+      <div class="pb-lado dir">
+        <b>SEM DOWNLOAD</b>
+        <span>direto do navegador</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PALCO ================= -->
+<main class="wrap palco">
+
+  <div class="cabeca">
+    <a href="/" class="marca" aria-label="Jogar GTA 6">
+      <img src="img/logo-branco.png" alt="Jogar GTA 6" onerror="this.remove()">
+    </a>
+    <div class="agora">
+      <span>JOGANDO AGORA</span>
+      <strong id="agoraNome">—</strong>
+    </div>
+  </div>
+
+  <div class="palco-tela">
+    <div class="tela" id="tela"></div>
+  </div>
+
+  <div class="base">
+    <div class="esq">
+      <div class="dado">
+        <span>PRÓXIMO SORTEIO EM</span>
+        <strong id="baseConta">00:00</strong>
+      </div>
+      <div class="dado">
+        <span>AO VIVO AGORA</span>
+        <strong><i class="ponto"></i> <b id="aoVivoN">0</b> pessoas</strong>
+      </div>
+    </div>
+    <div class="acoes">
+      <button class="btn m vazio" id="btnMeus" onclick="passo3()" style="display:none">
+        Meus números <b id="btnMeusN">0</b></button>
+      <button class="btn m" onclick="entrar()">JOGAR</button>
+    </div>
+  </div>
+
+</main>
+
+<div class="flash" id="flash">
+  <div>
+    <span>NOVO SORTEIO</span>
+    <strong id="flashNome">—</strong>
+  </div>
+</div>
+
+<footer class="rodape">
+  <div class="wrap">
+    <div class="links"><span>JOGAR</span><span>SORTEIO</span><span>REGRAS</span><span>CONTATO</span>
+      <span>TERMOS</span><span style="color:var(--dim);letter-spacing:0">jogargta6.com</span></div>
+    <p>Protótipo de demonstração. Site de fãs não oficial, sem vínculo, patrocínio ou aprovação de
+    qualquer publicadora ou fabricante de console. Marcas e títulos citados pertencem aos seus
+    respectivos detentores. Nenhum pagamento é processado nesta página.</p>
+  </div>
+</footer>
+
+<div class="ov" id="ov" onclick="if(event.target===this)fecharMo()"><div class="mo" id="mo"></div></div>
+
+<script type="module">
+/* =====================================================================
+   FIRESTORE — chat e inscrições.
+   A apiKey do Firebase web é pública por design: ela identifica o projeto,
+   não autentica ninguém. Quem protege os dados são as Regras do Firestore,
+   em REGRAS-FIRESTORE.txt. Publique antes de divulgar o site.
+   ===================================================================== */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+try {
+  const db = getFirestore(initializeApp({
+    apiKey:            "AIzaSyD6Mb9oot3guI8M8fsf1x0FlNBrWPD3M-8",
+    authDomain:        "jogargta6-8c714.firebaseapp.com",
+    projectId:         "jogargta6-8c714",
+    storageBucket:     "jogargta6-8c714.firebasestorage.app",
+    messagingSenderId: "170073357865",
+    appId:             "1:170073357865:web:40fd5a25010597a00c6638"
+  }));
+  window.FB = {
+    ouvirChat(cb, n = 60){
+      return onSnapshot(
+        query(collection(db,'chat'), orderBy('ts','desc'), limit(n)),
+        s => cb(s.docs.map(d => d.data()).reverse().map(d => ({ n:d.nome, m:d.msg }))),
+        e => { console.warn('chat:', e.code); cb(null); });
+    },
+    enviarChat:  (nome,msg) => addDoc(collection(db,'chat'), { nome, msg, ts:serverTimestamp() }),
+    salvarIns:   (d)        => addDoc(collection(db,'inscricoes'), { ...d, ts:serverTimestamp() })
+  };
+  if (window.aoLigarFirebase) window.aoLigarFirebase();
+} catch (e) { console.warn('Firebase indisponível, seguindo em modo local:', e); }
+</script>
+
+<script>
+/* =====================================================================
+   JOGAR GTA 6 — jogargta6.com
+   Dados ao vivo da API pública da SmartCast. Sorteio e checkout simulados.
+   ===================================================================== */
+
+const KICK  = 'jogargta';
+const ARTE  = 'img/preroll.jpg';
+const FOTOS = ['Jason_and_Lucia_17','Jason_and_Lucia_18','Jason_and_Lucia_19',
+               'Jason_and_Lucia_20','Jason_Duval_13','Jason_Duval_17']
+              .map(n => 'screenshots/web/' + n + '.jpg');
+
+/* Taxa única de entrada e pacote extra de números. Ajuste aqui. */
+const TAXA  = { preco:5, numeros:4, rotulo:'Entrada no sorteio' };
+const EXTRA = { preco:5, numeros:5, rotulo:'5 números extras' };
+
+const LIVE  = { on:true, ws:'qPH4AvKv1HKZzXwbRKPJ', ms:4000, ok:false, falhas:0 };
+const PIX = {
+  criar:  '/api/pix/criar',    // função serverless; vazio = modo demonstração
+  status: '/api/pix/status',
+  a_cada: 4000,                // de quanto em quanto tempo perguntar se caiu
+  timer:  null
+};
+const TURNO = 600;
+
+const S = {
+  gente:2600, naFila:0, host:true, sorteio:1042,
+  resta:0, quem:'—', activeId:null,
+  cadastro:null, compra:null, numeros:[]
+};
+
+const $  = id => document.getElementById(id);
+const ri = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+const mmss = s => String(Math.floor(Math.max(0,s)/60)).padStart(2,'0')+':'+String(Math.max(0,s)%60).padStart(2,'0');
+const fmt  = n => Number(n||0).toLocaleString('pt-BR');
+const esc  = v => String(v==null?'':v).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+
+/* NOMES_COMPLETOS = true exibe o nome como vem da API. Isso é tratamento de
+   dado pessoal de terceiro sem base legal (LGPD art. 7º), com você como
+   controlador — ver MONTAGEM.md. Em false, vira "Samuel S.". */
+const NOMES_COMPLETOS = true;
+
+function mascarar(bruto){
+  const cru = String(bruto||'').trim().replace(/[<>]/g,'');
+  if (NOMES_COMPLETOS) return cru.slice(0,40) || 'Jogador';
+  let t = String(bruto||'').trim().replace(/\s+/g,' ').replace(/[<>]/g,'').replace(/\S+@\S+/g,'');
+  if (!t) return 'Jogador';
+  if (t.length > 28) t = t.slice(0,28);
+  const p = t.split(' ').filter(Boolean);
+  if (p.length >= 2) return p[0] + ' ' + (p[p.length-1][0]||'').toUpperCase() + '.';
+  return p[0].length <= 6 ? p[0] : p[0].slice(0,4) + '···';
+}
+
+/* ---------------- imagens ---------------- */
+function montarFundo(){
+  const el = $('bg');
+  el.innerHTML = FOTOS.map(s => '<img src="'+s+'" alt="" loading="lazy">').join('');
+  const imgs = [...el.querySelectorAll('img')];
+  if (!imgs.length) return;
+  let i = 0; imgs[0].classList.add('on');
+  setInterval(() => { imgs[i].classList.remove('on');
+                      i = (i+1) % imgs.length; imgs[i].classList.add('on'); }, 7000);
+}
+function montarArte(){
+  const el = $('arte'), t = new Image();
+  t.onload  = () => { el.classList.remove('grade'); el.innerHTML = '<img src="'+ARTE+'" alt="">'; };
+  t.onerror = () => { el.classList.add('grade');
+                      el.innerHTML = FOTOS.map(s => '<img src="'+s+'" alt="" loading="lazy">').join(''); };
+  t.src = ARTE;
+}
+function montarPlayer(){
+  const f = document.createElement('iframe');
+  f.src = 'https://player.kick.com/' + KICK;
+  f.allow = 'autoplay; fullscreen; picture-in-picture';
+  f.allowFullscreen = true; f.referrerPolicy = 'origin';
+  $('tela').appendChild(f);
+}
+
+/* ---------------- dados ao vivo ---------------- */
+async function puxarLive(){
+  if (!LIVE.on) return;
+  const url = 'https://api.smartcast.gg/trpc/remotePlay.publicState?input=' +
+              encodeURIComponent(JSON.stringify({ json:{ workspaceId: LIVE.ws } }));
+  try {
+    const r = await fetch(url, { cache:'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    aplicar((await r.json()).result.data.json);
+    LIVE.ok = true; LIVE.falhas = 0;
+  } catch(_) { if (++LIVE.falhas >= 3) LIVE.ok = false; }
+}
+
+function aplicar(j){
+  const a = j.active;
+  if (a){
+    const nome = mascarar(a.name);
+    if (S.activeId && a.id !== S.activeId) anunciar(nome);   // handoff real = novo sorteio
+    S.activeId = a.id;
+    S.quem  = nome;
+    S.resta = Math.max(0, Math.min(a.expiresAt ? Math.round((a.expiresAt - j.serverNow)/1000)
+                                               : (a.seconds||0), 3600));
+  }
+  if (typeof j.queueCount === 'number') S.naFila = j.queueCount;
+  S.host = !!j.hostOnline;
+  pintar();
+}
+
+/* ---------------- anúncio do novo sorteio ---------------- */
+function anunciar(nome){
+  S.sorteio++;
+  const f = $('flash');
+  $('flashNome').textContent = nome;
+  f.classList.add('on');
+  clearTimeout(anunciar._t);
+  anunciar._t = setTimeout(() => f.classList.remove('on'), 5200);
+}
+
+/* ---------------- pintura ---------------- */
+function pintar(){
+  const bm = $('btnMeus');
+  if (bm){
+    bm.style.display = S.numeros.length ? '' : 'none';
+    $('btnMeusN').textContent = S.numeros.length;
+  }
+  $('agoraNome').textContent = S.quem;
+  $('baseConta').textContent = mmss(S.resta);
+  $('aoVivoN').textContent   = fmt(S.gente);
+  $('prOnline').textContent  = fmt(S.gente);
+}
+
+/* ---------------- portal ---------------- */
+function fecharPortal(){ $('portal').classList.add('off'); document.body.style.overflow = ''; }
+function entrar(){ passo1(); }   // o pré-roll apenas fecha; o modal é só daqui
+
+/* ---------------- modal em tela cheia ---------------- */
+function abrirMo(html){ $('mo').innerHTML = html; $('ov').classList.add('on');
+                        document.body.style.overflow = 'hidden'; }
+function fecharMo(){ pararEspera(); $('ov').classList.remove('on'); document.body.style.overflow = ''; }
+
+const trilha = n => '<div class="passos-n">' +
+  [1,2,3].map(i => '<i class="'+(i<=n?'on':'')+'"></i>').join('') + '</div>';
+const fecharX = '<button class="fechar-x" onclick="fecharMo()" aria-label="Fechar">&times;</button>';
+
+function cpfValido(v){
+  const c = String(v).replace(/\D/g,'');
+  if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+  let s = 0; for (let i=0;i<9;i++)  s += +c[i]*(10-i);
+  if ((s*10)%11%10 !== +c[9]) return false;
+  s = 0;     for (let i=0;i<10;i++) s += +c[i]*(11-i);
+  return (s*10)%11%10 === +c[10];
+}
+
+/* ---------------- termos ---------------- */
+function verTermos(voltar){
+  abrirMo(fecharX + `
+    <div class="mo-in">
+      <h3>Termos de participação</h3>
+      <div class="termos">
+        <p class="aviso-forte"><b>Entrar no sorteio não garante que você vai jogar.</b>
+        Você está comprando números para concorrer, não tempo de jogo.</p>
+
+        <h4>1. O que é a taxa</h4>
+        <p>A taxa de R$ ${TAXA.preco},00 dá direito a ${TAXA.numeros} números da sorte para um
+        sorteio. É a compra de uma participação no sorteio, não de uma sessão de jogo.</p>
+
+        <h4>2. Não há garantia de jogar</h4>
+        <p>O resultado depende do sorteio. A chance de cada número varia conforme quantos números
+        estiverem concorrendo no mesmo sorteio. É possível participar de vários sorteios seguidos
+        e não ser sorteado em nenhum deles. Ao concordar com estes termos você declara entender
+        que pode pagar e não jogar.</p>
+
+        <h4>3. Pagamento</h4>
+        <p>O valor não é reembolsável depois que o sorteio é realizado. Se o sorteio não acontecer
+        por falha nossa, devolvemos o valor pelo mesmo meio de pagamento.</p>
+
+        <h4>4. Validade dos números</h4>
+        <p>Cada número vale para um único sorteio. Números não sorteados não passam para o
+        sorteio seguinte.</p>
+
+        <h4>5. Se você for sorteado</h4>
+        <p>Avisamos pelo WhatsApp informado. Você tem 30 segundos para assumir o controle depois
+        do aviso na tela. Sem isso, a vez passa para o próximo e o número é considerado usado.
+        O turno é encerrado se você ficar parado por mais de 40 segundos.</p>
+
+        <h4>6. Idade</h4>
+        <p>Participação restrita a maiores de 18 anos.</p>
+
+        <h4>7. Seus dados</h4>
+        <p>Usamos nome e WhatsApp apenas para avisar o resultado e liberar o acesso. Não vendemos
+        nem compartilhamos com terceiros. Você pode pedir a exclusão a qualquer momento pelo
+        contato no rodapé.</p>
+
+        <h4>8. Site não oficial</h4>
+        <p>Site de fãs, sem vínculo, patrocínio ou aprovação da Rockstar Games, da Take-Two
+        Interactive ou de fabricantes de console. Marcas e títulos citados pertencem aos seus
+        respectivos detentores.</p>
+      </div>
+      <button class="btn bloco" onclick="${voltar}">Voltar</button>
+    </div>`);
+}
+
+/* passo 1 — dados */
+function passo1(){
+  const c = S.cadastro || {};
+  abrirMo(fecharX + `
+    <div class="mo-in">
+      ${trilha(1)}
+      <h3>Quem vai jogar?</h3>
+      <p class="sub">Avisamos pelo WhatsApp se os seus números forem sorteados.</p>
+      <input class="campo" id="f1n" maxlength="40" placeholder="Seu nome"
+             autocomplete="name" value="${esc(c.nome||'')}">
+      <input class="campo" id="f1w" maxlength="16" placeholder="WhatsApp — (11) 91234-5678"
+             inputmode="tel" autocomplete="tel" value="${esc(c.zap||'')}">
+      <input class="campo" id="f1e2" maxlength="80" placeholder="seu@email.com"
+             type="email" inputmode="email" autocomplete="email" value="${esc(c.email||'')}">
+      <input class="campo" id="f1c" maxlength="14" placeholder="CPF — 123.456.789-00"
+             inputmode="numeric" value="${esc(c.cpfFmt||'')}">
+      <p class="obs-campo">E-mail e CPF são exigidos pelo Mercado Pago para emitir o Pix.</p>
+      <label class="aceite"><input type="checkbox" id="f1ok">
+        <span>Li e concordo com os
+        <button type="button" class="verTermos" onclick="verTermos('passo1()')">termos de participação</button>,
+        inclusive que entrar no sorteio não garante que eu vá jogar.</span></label>
+      <p class="erro" id="f1e"></p>
+      <button class="btn bloco" id="f1go" style="margin-top:18px">Continuar</button>
+    </div>`);
+  const n=$('f1n'), w=$('f1w'), m=$('f1e2'), cp=$('f1c'), ok=$('f1ok'), e=$('f1e');
+  n.focus();
+
+  cp.addEventListener('input', () => {              // máscara 123.456.789-00
+    const d = cp.value.replace(/\D/g,'').slice(0,11);
+    cp.value = d.length <= 3 ? d
+             : d.length <= 6 ? d.slice(0,3)+'.'+d.slice(3)
+             : d.length <= 9 ? d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6)
+             : d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6,9)+'-'+d.slice(9);
+  });
+
+  w.addEventListener('input', () => {              // máscara (11) 91234-5678
+    let d = w.value.replace(/\D/g,'').slice(0,11);
+    w.value = d.length <= 2  ? d
+            : d.length <= 7  ? '('+d.slice(0,2)+') '+d.slice(2)
+            : '('+d.slice(0,2)+') '+d.slice(2,d.length-4)+'-'+d.slice(-4);
+  });
+
+  const falha = t => { e.textContent = t; e.style.display = 'block'; };
+  const go = () => {
+    const nome = n.value.trim().replace(/[<>]/g,'');
+    const zap  = w.value.trim(), so = zap.replace(/\D/g,'');
+    const mail = m.value.trim(), cpf = cp.value.replace(/\D/g,'');
+    if (nome.length < 2)                              return falha('Digite seu nome.');
+    if (so.length < 10)                               return falha('WhatsApp incompleto. Use DDD + número.');
+    if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(mail)) return falha('E-mail inválido.');
+    if (!cpfValido(cpf))                              return falha('CPF inválido.');
+    if (!ok.checked)                                  return falha('É preciso aceitar os termos para continuar.');
+    S.cadastro = { nome, zap, whatsapp:so, email:mail, cpf, cpfFmt:cp.value };
+    if (window.FB) window.FB.salvarIns({ ...S.cadastro, sorteio:S.sorteio })
+                     .catch(err => console.warn('inscrição:', err.code));
+    comprar(TAXA);
+  };
+  $('f1go').onclick = go;
+  [n,w].forEach(el => el.addEventListener('keydown', ev => { if (ev.key==='Enter') go(); }));
+}
+
+/* passo 2 — Pix
+   Um QR estático não identifica quem pagou: se 200 pessoas lerem o mesmo
+   código, não há como ligar cada pagamento ao cadastro. A cobrança vem do
+   provedor, uma por pessoa, com txid e webhook. Ver MONTAGEM.md. */
+function comprar(item){ S.compra = item; passo2(); }
+
+async function passo2(){
+  pararEspera();
+  abrirMo(fecharX + '<div class="mo-in">'+trilha(2)+
+          '<p class="sub" style="padding:40px 0">Gerando sua cobrança...</p></div>');
+
+  if (!PIX.criar){ return pintarPix(null, null, null, null); }   // demonstração
+
+  try {
+    const r = await fetch(PIX.criar, { method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        centavos: S.compra.preco*100, item: S.compra.rotulo,
+        nome: S.cadastro.nome, email: S.cadastro.email,
+        cpf: S.cadastro.cpf, whatsapp: S.cadastro.whatsapp })
+    });
+    const d = await r.json();
+    if (!r.ok) return erroPix(d);
+    pintarPix(d.imagemQr, d.copiaecola, d.txid, d.id);
+    esperarPagamento(d.id);
+  } catch (e) {
+    erroPix({ erro:'não foi possível falar com o servidor' });
+  }
+}
+
+function erroPix(d){
+  abrirMo(fecharX + `
+    <div class="mo-in"><div class="fim">
+      <div class="ic nao">!</div>
+      <h3>Não deu para gerar o Pix</h3>
+      <p class="sub">${esc(d.erro || 'erro desconhecido')}${
+        d.detalhe ? '<br><span style="opacity:.7">'+esc(d.detalhe)+'</span>' : ''}${
+        d.causa ? '<br><span style="opacity:.7">'+esc([].concat(d.causa).join(' · '))+'</span>' : ''}</p>
+      <button class="btn bloco" onclick="passo2()">Tentar de novo</button>
+      <button class="btn bloco vazio" style="margin-top:9px" onclick="fecharMo()">Fechar</button>
+    </div></div>`);
+}
+
+function blocosQr(){        // padrão decorativo — só aparece no modo demonstração
+  let h = '';
+  for (let y=0;y<21;y++) for (let x=0;x<21;x++){
+    const c = (x<7&&y<7)||(x>13&&y<7)||(x<7&&y>13);
+    const a = c && ((x%7===0||x%7===6||y%7===0||y%7===6)||(x%7>=2&&x%7<=4&&y%7>=2&&y%7<=4));
+    h += (c ? a : Math.random()>0.52) ? '<i></i>' : '<i style="background:#fff"></i>';
+  }
+  return h;
+}
+
+function pintarPix(imagem, codigo, txid, idPg){
+  const demo = !codigo, it = S.compra;
+  abrirMo(fecharX + `
+    <div class="mo-in">
+      ${trilha(2)}
+      <h3>Pague com Pix</h3>
+      <p class="sub">${esc(it.rotulo)} · ${it.numeros} números · sorteio #${S.sorteio}</p>
+      ${demo ? '<div class="simul">MODO DEMONSTRAÇÃO · imagem ilustrativa<br>nenhuma cobrança é gerada ou enviada</div>' : ''}
+      ${imagem ? '<img class="qrfoto" src="'+esc(imagem)+'" alt="QR Code Pix">'
+               : '<div class="qr">'+blocosQr()+'</div>'}
+      ${codigo ? '<p class="obs-campo" style="text-align:center;margin:-6px 0 10px">Copia e cola</p>'+
+                 '<div class="copia"><input id="pixCod" readonly value="'+esc(codigo)+'">'+
+                 '<button id="btCopiar" onclick="copiarPix()">Copiar</button></div>' : ''}
+      <div class="resumo">
+        <div><span>No nome de</span><b>${esc(S.cadastro ? S.cadastro.nome : '—')}</b></div>
+        <div><span>Números</span><b>${it.numeros}</b></div>
+        <div class="tot"><span>Total</span><b>R$ ${it.preco},00</b></div>
+      </div>
+      ${demo
+        ? '<button class="btn bloco" onclick="confirmar()">Simular pagamento aprovado</button>'
+        : '<p class="esperando" id="espera"><i></i> Aguardando o pagamento cair...</p>'}
+      <button class="btn bloco vazio" style="margin-top:14px" onclick="fecharMo()">Cancelar</button>
+    </div>`);
+}
+
+function copiarPix(){
+  const e = $('pixCod'); if (!e) return;
+  const b = $('btCopiar');
+  navigator.clipboard.writeText(e.value)
+    .then(() => { if (b){ b.textContent = 'Copiado'; setTimeout(() => b.textContent = 'Copiar', 1800); } })
+    .catch(() => e.select());
+}
+
+/* pergunta ao nosso servidor, que pergunta ao Mercado Pago, se o Pix caiu */
+function pararEspera(){ if (PIX.timer){ clearInterval(PIX.timer); PIX.timer = null; } }
+
+function esperarPagamento(id){
+  pararEspera();
+  const ate = Date.now() + 30*60*1000;      // a cobrança expira em 30 min
+  PIX.timer = setInterval(async () => {
+    if (!$('espera') || Date.now() > ate) return pararEspera();
+    try {
+      const r = await fetch(PIX.status + '?id=' + encodeURIComponent(id), { cache:'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d.pago){ pararEspera(); confirmar(); }
+      else if (['rejected','cancelled'].includes(d.status)){
+        pararEspera();
+        erroPix({ erro:'o pagamento foi ' + (d.status === 'rejected' ? 'recusado' : 'cancelado') });
+      }
+    } catch(_){ /* tenta de novo no próximo ciclo */ }
+  }, PIX.a_cada);
+}
+
+/* passo 3 — números da sorte */
+function gerarNumeros(n){
+  const vistos = new Set(S.numeros);
+  const novos = [];
+  while (novos.length < n){
+    const x = String(ri(10000,99999));
+    if (!vistos.has(x)){ vistos.add(x); novos.push(x); }
+  }
+  return novos;
+}
+
+function confirmar(){
+  S.numeros = S.numeros.concat(gerarNumeros(S.compra.numeros));
+  pintar();
+  passo3();
+}
+
+function passo3(){
+  abrirMo(fecharX + `
+    <div class="mo-in">
+      ${trilha(3)}
+      <h3>Seus números da sorte</h3>
+      <p class="sub">Valem para o sorteio <b>#${S.sorteio}</b>. Avisamos no WhatsApp
+      ${esc(S.cadastro ? S.cadastro.zap : '')} se algum deles for sorteado.</p>
+      <div class="sorte">${S.numeros.map(n => '<span>'+n+'</span>').join('')}</div>
+      <p class="sub" style="margin-bottom:18px">Mais números, mais chances no mesmo sorteio.</p>
+      <button class="btn bloco" onclick="comprar(EXTRA)">
+        Comprar mais ${EXTRA.numeros} números · R$ ${EXTRA.preco},00</button>
+      <button class="btn bloco vazio" style="margin-top:9px" onclick="fecharMo()">
+        Voltar para a transmissão</button>
+    </div>`);
+}
+
+/* ---------------- relógios ---------------- */
+setInterval(() => {
+  S.resta = Math.max(0, S.resta - 1);
+  if (!LIVE.ok && S.resta <= 0){ S.resta = TURNO; anunciar('Jogador ' + ri(100,999)); }
+  pintar();
+}, 1000);
+
+setInterval(() => { S.gente = Math.max(600, S.gente + ri(-45,58)); pintar(); }, 2600);
+
+/* ---------------- início ---------------- */
+document.body.style.overflow = 'hidden';     // trava enquanto o portal está aberto
+montarFundo(); montarArte(); montarPlayer(); pintar();
+if (LIVE.on){ puxarLive(); setInterval(puxarLive, LIVE.ms); }
+document.addEventListener('keydown', e => { if (e.key==='Escape') fecharMo(); });
+</script>
+</body>
+</html>

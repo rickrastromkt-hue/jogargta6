@@ -1,0 +1,44 @@
+Firebase Console > Firestore Database > Regras > colar e Publicar
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Chat público: qualquer um lê, qualquer um escreve uma mensagem válida,
+    // ninguém edita ou apaga o que já foi dito.
+    match /chat/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['nome','msg','ts'])
+                    && request.resource.data.nome is string
+                    && request.resource.data.nome.size() > 0
+                    && request.resource.data.nome.size() <= 24
+                    && request.resource.data.msg is string
+                    && request.resource.data.msg.size() > 0
+                    && request.resource.data.msg.size() <= 160;
+      allow update, delete: if false;
+    }
+
+    // Inscrições (nome + e-mail): o navegador só grava, nunca lê.
+    // Você consulta pelo Console ou pelo Admin SDK no servidor.
+    match /inscricoes/{id} {
+      allow read: if false;
+      allow create: if request.resource.data.nome is string
+                    && request.resource.data.email is string
+                    && request.resource.data.email.size() <= 120;
+      allow update, delete: if false;
+    }
+
+    // Nada mais é acessível pelo navegador.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+ATENCAO
+- Sem publicar estas regras, o Firestore fica em modo teste e expira em 30 dias
+  (ou fica aberto para o mundo, dependendo de como voce criou o banco).
+- "allow read: if false" em inscricoes e proposital: e-mail de participante nao
+  deve ser legivel pelo navegador de ninguem.
+- Isto nao substitui limite de taxa. Para conter spam de verdade, ligue o
+  Firebase App Check (reCAPTCHA v3) no console - e so ativar, nao muda o codigo.
