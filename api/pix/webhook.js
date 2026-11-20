@@ -39,11 +39,11 @@ export default async function handler(req, res) {
     const d = await r.json();
     console.log('webhook pagamento', {
       id: d.id, status: d.status, ref: d.external_reference,
-      valor: d.transaction_amount, zap: d.metadata?.whatsapp
+      valor: d.transaction_amount, email: d.payer?.email
     });
 
     if (d.status === 'approved') {
-      // TODO: gravar no Firestore e disparar o aviso no WhatsApp
+      // TODO: gravar no Firestore e disparar o aviso por e-mail
     }
   } catch (e) {
     console.error('webhook falhou:', e);

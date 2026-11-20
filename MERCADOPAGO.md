@@ -106,9 +106,9 @@ e uma conta de serviço:
 3. `npm i firebase-admin` e destravar o trecho marcado com TODO em
    `api/pix/webhook.js`.
 
-**Avisar no WhatsApp.** O campo é coletado e vai nos `metadata` do pagamento,
-mas nada é enviado ainda. Precisa de uma API de WhatsApp (Cloud API da Meta,
-Z-API, Twilio) chamada pelo webhook depois do `approved`.
+**Avisar o ganhador.** Hoje nada é enviado quando alguém é sorteado. O e-mail
+do pagador vem do próprio pagamento; falta ligar um envio (Resend, SendGrid
+ou o SMTP do seu domínio) no webhook, depois do `approved`.
 
 **Sorteio no servidor.** Os números da sorte são gerados no navegador. Para
 valer como sorteio, precisam nascer no servidor, ligados ao `external_reference`

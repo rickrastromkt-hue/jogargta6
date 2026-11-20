@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   const token = process.env.MP_ACCESS_TOKEN;
   if (!token) return res.status(500).json({ erro: 'MP_ACCESS_TOKEN não configurado' });
 
-  const { centavos, item, nome, email, cpf, whatsapp } = req.body || {};
+  const { centavos, item, nome, email, cpf } = req.body || {};
 
   // validações antes de gastar uma chamada na API
   const valor = Number(centavos);
@@ -43,8 +43,7 @@ export default async function handler(req, res) {
       first_name: partes[0] || 'Jogador',
       last_name: partes.slice(1).join(' ') || 'Sorteio',
       ...(doc ? { identification: { type: 'CPF', number: doc } } : {})
-    },
-    metadata: { whatsapp: String(whatsapp || '').replace(/\D/g, '') }
+    }
   };
 
   try {

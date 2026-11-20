@@ -389,7 +389,7 @@ const TURNO = 600;
 const S = {
   gente:2600, naFila:0, host:true, sorteio:1042,
   resta:0, quem:'—', activeId:null,
-  cadastro:null, compra:null, numeros:[]
+  cadastro:null, rascunho:null, compra:null, numeros:[]
 };
 
 const $  = id => document.getElementById(id);
@@ -530,7 +530,14 @@ function fecharPortal(){
   $('portal').classList.add('off');
   document.body.style.overflow = '';
 }
-function entrar(){ passo1(); }   // o pré-roll apenas fecha; o modal é só daqui
+/* O pré-roll apenas fecha; o modal é só daqui.
+   Quem já tem números vai direto para eles; quem já se cadastrou pula o
+   formulário e cai no Pix. */
+function entrar(){
+  if (S.numeros.length) return passo3();
+  if (S.cadastro)       return comprar(TAXA);
+  passo1();
+}
 
 /* ---------------- modal em tela cheia ---------------- */
 function abrirMo(html){ $('mo').innerHTML = html; $('ov').classList.add('on');
@@ -578,7 +585,7 @@ function verTermos(voltar){
         sorteio seguinte.</p>
 
         <h4>5. Se você for sorteado</h4>
-        <p>Avisamos pelo WhatsApp informado. Você tem 30 segundos para assumir o controle depois
+        <p>Avisamos pelo e-mail informado. Você tem 30 segundos para assumir o controle depois
         do aviso na tela. Sem isso, a vez passa para o próximo e o número é considerado usado.
         O turno é encerrado se você ficar parado por mais de 40 segundos.</p>
 
@@ -586,7 +593,8 @@ function verTermos(voltar){
         <p>Participação restrita a maiores de 18 anos.</p>
 
         <h4>7. Seus dados</h4>
-        <p>Usamos nome e WhatsApp apenas para avisar o resultado e liberar o acesso. Não vendemos
+        <p>Usamos nome, e-mail e CPF apenas para emitir a cobrança, avisar o resultado e liberar
+        o acesso. Não vendemos
         nem compartilhamos com terceiros. Você pode pedir a exclusão a qualquer momento pelo
         contato no rodapé.</p>
 
@@ -599,18 +607,28 @@ function verTermos(voltar){
     </div>`);
 }
 
+/* Guarda o que já foi digitado antes de sair para os termos, senão o
+   formulário volta em branco. */
+function guardarRascunho(){
+  const n = $('f1n'); if (!n) return;
+  S.rascunho = {
+    nome:   n.value,
+    email:  $('f1e2').value,
+    cpfFmt: $('f1c').value,
+    aceite: $('f1ok').checked
+  };
+}
+
 /* passo 1 — dados */
 function passo1(){
-  const c = S.cadastro || {};
+  const c = S.cadastro || S.rascunho || {};
   abrirMo(fecharX + `
     <div class="mo-in">
       ${trilha(1)}
       <h3>Quem vai jogar?</h3>
-      <p class="sub">Avisamos pelo WhatsApp se os seus números forem sorteados.</p>
+      <p class="sub">Avisamos por e-mail se os seus números forem sorteados.</p>
       <input class="campo" id="f1n" maxlength="40" placeholder="Seu nome"
              autocomplete="name" value="${esc(c.nome||'')}">
-      <input class="campo" id="f1w" maxlength="16" placeholder="WhatsApp — (11) 91234-5678"
-             inputmode="tel" autocomplete="tel" value="${esc(c.zap||'')}">
       <input class="campo" id="f1e2" maxlength="80" placeholder="seu@email.com"
              type="email" inputmode="email" autocomplete="email" value="${esc(c.email||'')}">
       <input class="campo" id="f1c" maxlength="14" placeholder="CPF — 123.456.789-00"
@@ -618,12 +636,14 @@ function passo1(){
       <p class="obs-campo">E-mail e CPF são exigidos pelo Mercado Pago para emitir o Pix.</p>
       <label class="aceite"><input type="checkbox" id="f1ok">
         <span>Li e concordo com os
-        <button type="button" class="verTermos" onclick="verTermos('passo1()')">termos de participação</button>,
+        <button type="button" class="verTermos"
+                onclick="guardarRascunho();verTermos('passo1()')">termos de participação</button>,
         inclusive que entrar no sorteio não garante que eu vá jogar.</span></label>
       <p class="erro" id="f1e"></p>
       <button class="btn bloco" id="f1go" style="margin-top:18px">Continuar</button>
     </div>`);
-  const n=$('f1n'), w=$('f1w'), m=$('f1e2'), cp=$('f1c'), ok=$('f1ok'), e=$('f1e');
+  const n=$('f1n'), m=$('f1e2'), cp=$('f1c'), ok=$('f1ok'), e=$('f1e');
+  if (c.aceite) ok.checked = true;
   n.focus();
 
   cp.addEventListener('input', () => {              // máscara 123.456.789-00
@@ -634,30 +654,22 @@ function passo1(){
              : d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6,9)+'-'+d.slice(9);
   });
 
-  w.addEventListener('input', () => {              // máscara (11) 91234-5678
-    let d = w.value.replace(/\D/g,'').slice(0,11);
-    w.value = d.length <= 2  ? d
-            : d.length <= 7  ? '('+d.slice(0,2)+') '+d.slice(2)
-            : '('+d.slice(0,2)+') '+d.slice(2,d.length-4)+'-'+d.slice(-4);
-  });
-
   const falha = t => { e.textContent = t; e.style.display = 'block'; };
   const go = () => {
     const nome = n.value.trim().replace(/[<>]/g,'');
-    const zap  = w.value.trim(), so = zap.replace(/\D/g,'');
     const mail = m.value.trim(), cpf = cp.value.replace(/\D/g,'');
     if (nome.length < 2)                              return falha('Digite seu nome.');
-    if (so.length < 10)                               return falha('WhatsApp incompleto. Use DDD + número.');
     if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(mail)) return falha('E-mail inválido.');
     if (!cpfValido(cpf))                              return falha('CPF inválido.');
     if (!ok.checked)                                  return falha('É preciso aceitar os termos para continuar.');
-    S.cadastro = { nome, zap, whatsapp:so, email:mail, cpf, cpfFmt:cp.value };
+    S.cadastro = { nome, email:mail, cpf, cpfFmt:cp.value };
+    S.rascunho = null;
     if (window.FB) window.FB.salvarIns({ ...S.cadastro, sorteio:S.sorteio })
                      .catch(err => console.warn('inscrição:', err.code));
     comprar(TAXA);
   };
   $('f1go').onclick = go;
-  [n,w].forEach(el => el.addEventListener('keydown', ev => { if (ev.key==='Enter') go(); }));
+  [n,m,cp].forEach(el => el.addEventListener('keydown', ev => { if (ev.key==='Enter') go(); }));
 }
 
 /* passo 2 — Pix
@@ -678,8 +690,7 @@ async function passo2(){
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({
         centavos: S.compra.preco*100, item: S.compra.rotulo,
-        nome: S.cadastro.nome, email: S.cadastro.email,
-        cpf: S.cadastro.cpf, whatsapp: S.cadastro.whatsapp })
+        nome: S.cadastro.nome, email: S.cadastro.email, cpf: S.cadastro.cpf })
     });
     const d = await r.json();
     if (!r.ok) return erroPix(d);
@@ -789,8 +800,8 @@ function passo3(){
     <div class="mo-in">
       ${trilha(3)}
       <h3>Seus números da sorte</h3>
-      <p class="sub">Valem para o sorteio <b>#${S.sorteio}</b>. Avisamos no WhatsApp
-      ${esc(S.cadastro ? S.cadastro.zap : '')} se algum deles for sorteado.</p>
+      <p class="sub">Valem para o sorteio <b>#${S.sorteio}</b>. Avisamos em
+      ${esc(S.cadastro ? S.cadastro.email : 'seu e-mail')} se algum deles for sorteado.</p>
       <div class="sorte">${S.numeros.map(n => '<span>'+n+'</span>').join('')}</div>
       <p class="sub" style="margin-bottom:18px">Mais números, mais chances no mesmo sorteio.</p>
       <button class="btn bloco" onclick="comprar(EXTRA)">
